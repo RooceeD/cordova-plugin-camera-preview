@@ -454,7 +454,7 @@ public class CameraActivity extends Fragment {
     }
   };
 
-  private Camera.Size getOptimalPictureSize(final int width, final int height, final Camera.Size previewSize, final List<Camera.Size> supportedSizes){
+  private Camera.Size getOptimalPictureSize(final int width, final int height, final Camera.Size previewSize, final Camera.Size defaultSize, final List<Camera.Size> supportedSizes){
     /*
       get the supportedPictureSize that:
       - matches exactly width and height
@@ -520,6 +520,12 @@ public class CameraActivity extends Fragment {
         }
       }
     }
+    
+    // special case, if getSupportedPictureSizes() return low resolutions
+    if (defaultSize.width * defaultSize.height > size.width * size.height) {
+      size = defaultSize;
+    }
+    
     Log.d(TAG, "CameraPreview optimalPictureSize " + size.width + 'x' + size.height);
     return size;
   }
@@ -537,8 +543,10 @@ public class CameraActivity extends Fragment {
       new Thread() {
         public void run() {
           Camera.Parameters params = mCamera.getParameters();
-
-          params.setPictureSize(width, height);
+          
+          Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getPictureSize(), params.getSupportedPictureSizes());
+          params.setPictureSize(size.width, size.height);
+          
           currentQuality = quality;
 
           if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
